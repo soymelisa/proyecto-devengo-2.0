@@ -58,6 +58,7 @@ const Projections: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState('');
   const [showParametersSummary, setShowParametersSummary] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Estados para dropdowns
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
@@ -178,6 +179,14 @@ const Projections: React.FC = () => {
     const startIndex = months.indexOf(projection.startMonth);
     const firstMonth = months[startIndex];
     setSelectedMonth(firstMonth);
+  };
+
+  const nextStep = () => {
+    if (currentStep < 2) setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
   // Generar datos de ejemplo para la tabla
@@ -619,15 +628,46 @@ const Projections: React.FC = () => {
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Configurar Nueva Proyección</h2>
-                  <p className="text-gray-600 mt-1">Define los parámetros para generar proyecciones financieras</p>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {currentStep === 1 ? 'Selección de Filtros' : 'Configuración de Parámetros'}
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    {currentStep === 1 
+                      ? 'Selecciona las marcas, campus y programas para la proyección'
+                      : 'Configura los parámetros financieros para cada combinación'
+                    }
+                  </p>
                 </div>
                 <button 
-                  onClick={() => setShowConfig(false)}
+                  onClick={() => {
+                    setShowConfig(false);
+                    setCurrentStep(1);
+                  }}
                   className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
+              </div>
+              
+              {/* Progress indicator */}
+              <div className="mt-4">
+                <div className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    1
+                  </div>
+                  <div className={`w-16 h-1 mx-2 ${currentStep > 1 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    2
+                  </div>
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-gray-600">
+                  <span>Selección</span>
+                  <span>Parámetros</span>
+                </div>
               </div>
             </div>
 
@@ -697,209 +737,423 @@ const Projections: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Multiselect Marcas */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Selección de Marcas</h3>
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowBrandDropdown(!showBrandDropdown)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-left flex items-center justify-between"
-                          >
-                            <span className="text-sm">
-                              {configData.selectedBrands.length === 0 
-                                ? 'Seleccionar marcas' 
-                                : `${configData.selectedBrands.length} marca(s) seleccionada(s)`
-                              }
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform ${showBrandDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-                          
-                          {showBrandDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                              {brands.map((brand) => (
-                                <label key={brand} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={configData.selectedBrands.includes(brand)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setConfigData(prev => ({
-                                          ...prev,
-                                          selectedBrands: [...prev.selectedBrands, brand]
-                                        }));
-                                      } else {
+                      {/* Paso 1: Selección de Filtros */}
+                      {currentStep === 1 && (
+                        <div>
+                          {/* Selección de Marcas */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                              Marcas <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowBrandDropdown(!showBrandDropdown)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-left flex items-center justify-between"
+                              >
+                                <span className="text-sm">
+                                  {configData.selectedBrands.length === 0 
+                                    ? 'Seleccionar marcas' 
+                                    : configData.selectedBrands.length === 1 
+                                      ? configData.selectedBrands[0]
+                                      : `${configData.selectedBrands.length} marcas seleccionadas`
+                                  }
+                                </span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showBrandDropdown ? 'rotate-180' : ''}`} />
+                              </button>
+                              
+                              {showBrandDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                                    <div className="flex items-center justify-between">
+                                      <button
+                                        onClick={() => {
+                                          if (configData.selectedBrands.length === brands.length) {
+                                            setConfigData(prev => ({ ...prev, selectedBrands: [] }));
+                                          } else {
+                                            setConfigData(prev => ({ ...prev, selectedBrands: [...brands] }));
+                                          }
+                                        }}
+                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                      >
+                                        {configData.selectedBrands.length === brands.length ? 'Deseleccionar todas' : 'Seleccionar todas'}
+                                      </button>
+                                      {configData.selectedBrands.length > 0 && (
+                                        <button
+                                          onClick={() => setConfigData(prev => ({ ...prev, selectedBrands: [] }))}
+                                          className="text-sm text-gray-600 hover:text-gray-800"
+                                        >
+                                          Limpiar
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="py-2">
+                                    {brands.map((brand) => (
+                                      <label
+                                        key={brand}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={configData.selectedBrands.includes(brand)}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedBrands: [...prev.selectedBrands, brand]
+                                              }));
+                                            } else {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedBrands: prev.selectedBrands.filter(b => b !== brand)
+                                              }));
+                                            }
+                                          }}
+                                          className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <span className="text-sm text-gray-900">{brand}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Tags de marcas seleccionadas */}
+                            {configData.selectedBrands.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {configData.selectedBrands.map((brand) => (
+                                  <div
+                                    key={brand}
+                                    className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                                  >
+                                    <span>{brand}</span>
+                                    <button
+                                      onClick={() => {
                                         setConfigData(prev => ({
                                           ...prev,
                                           selectedBrands: prev.selectedBrands.filter(b => b !== brand)
                                         }));
-                                      }
-                                    }}
-                                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                  />
-                                  <span className="text-sm text-gray-900">{brand}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {configData.selectedBrands.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {configData.selectedBrands.map((brand) => (
-                                <div key={brand} className="flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                  <span>{brand}</span>
-                                  <button
-                                    onClick={() => {
-                                      setConfigData(prev => ({
-                                        ...prev,
-                                        selectedBrands: prev.selectedBrands.filter(b => b !== brand)
-                                      }));
-                                    }}
-                                    className="ml-2 hover:bg-blue-200 rounded-full p-0.5"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                                      }}
+                                      className="ml-2 hover:bg-blue-200 rounded-full p-0.5"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Multiselect Campus */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Selección de Campus</h3>
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowCampusDropdown(!showCampusDropdown)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-left flex items-center justify-between"
-                          >
-                            <span className="text-sm">
-                              {configData.selectedCampuses.length === 0 
-                                ? 'Seleccionar campus' 
-                                : `${configData.selectedCampuses.length} campus seleccionado(s)`
-                              }
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-                          
-                          {showCampusDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                              {campuses.map((campus) => (
-                                <label key={campus} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={configData.selectedCampuses.includes(campus)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setConfigData(prev => ({
-                                          ...prev,
-                                          selectedCampuses: [...prev.selectedCampuses, campus]
-                                        }));
-                                      } else {
+                          {/* Selección de Campus */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                              Campus <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowCampusDropdown(!showCampusDropdown)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-left flex items-center justify-between"
+                              >
+                                <span className="text-sm">
+                                  {configData.selectedCampuses.length === 0 
+                                    ? 'Seleccionar campus' 
+                                    : configData.selectedCampuses.length === 1 
+                                      ? configData.selectedCampuses[0]
+                                      : `${configData.selectedCampuses.length} campus seleccionados`
+                                  }
+                                </span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showCampusDropdown ? 'rotate-180' : ''}`} />
+                              </button>
+                              
+                              {showCampusDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                                    <div className="flex items-center justify-between">
+                                      <button
+                                        onClick={() => {
+                                          if (configData.selectedCampuses.length === campuses.length) {
+                                            setConfigData(prev => ({ ...prev, selectedCampuses: [] }));
+                                          } else {
+                                            setConfigData(prev => ({ ...prev, selectedCampuses: [...campuses] }));
+                                          }
+                                        }}
+                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                      >
+                                        {configData.selectedCampuses.length === campuses.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                                      </button>
+                                      {configData.selectedCampuses.length > 0 && (
+                                        <button
+                                          onClick={() => setConfigData(prev => ({ ...prev, selectedCampuses: [] }))}
+                                          className="text-sm text-gray-600 hover:text-gray-800"
+                                        >
+                                          Limpiar
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="py-2">
+                                    {campuses.map((campus) => (
+                                      <label
+                                        key={campus}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={configData.selectedCampuses.includes(campus)}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedCampuses: [...prev.selectedCampuses, campus]
+                                              }));
+                                            } else {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedCampuses: prev.selectedCampuses.filter(c => c !== campus)
+                                              }));
+                                            }
+                                          }}
+                                          className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <span className="text-sm text-gray-900">{campus}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Tags de campus seleccionados */}
+                            {configData.selectedCampuses.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {configData.selectedCampuses.map((campus) => (
+                                  <div
+                                    key={campus}
+                                    className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm"
+                                  >
+                                    <span>{campus}</span>
+                                    <button
+                                      onClick={() => {
                                         setConfigData(prev => ({
                                           ...prev,
                                           selectedCampuses: prev.selectedCampuses.filter(c => c !== campus)
                                         }));
-                                      }
-                                    }}
-                                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                  />
-                                  <span className="text-sm text-gray-900">{campus}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {configData.selectedCampuses.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {configData.selectedCampuses.map((campus) => (
-                                <div key={campus} className="flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                                  <span>{campus}</span>
-                                  <button
-                                    onClick={() => {
-                                      setConfigData(prev => ({
-                                        ...prev,
-                                        selectedCampuses: prev.selectedCampuses.filter(c => c !== campus)
-                                      }));
-                                    }}
-                                    className="ml-2 hover:bg-green-200 rounded-full p-0.5"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                                      }}
+                                      className="ml-2 hover:bg-green-200 rounded-full p-0.5"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
 
-                      {/* Multiselect Programas */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Selección de Programas</h3>
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowProgramDropdown(!showProgramDropdown)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white text-left flex items-center justify-between"
-                          >
-                            <span className="text-sm">
-                              {configData.selectedPrograms.length === 0 
-                                ? 'Seleccionar programas' 
-                                : `${configData.selectedPrograms.length} programa(s) seleccionado(s)`
-                              }
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform ${showProgramDropdown ? 'rotate-180' : ''}`} />
-                          </button>
-                          
-                          {showProgramDropdown && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                              {programs.map((program) => (
-                                <label key={program} className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={configData.selectedPrograms.includes(program)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setConfigData(prev => ({
-                                          ...prev,
-                                          selectedPrograms: [...prev.selectedPrograms, program]
-                                        }));
-                                      } else {
+                          {/* Selección de Programas */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                              Programas <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowProgramDropdown(!showProgramDropdown)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-left flex items-center justify-between"
+                              >
+                                <span className="text-sm">
+                                  {configData.selectedPrograms.length === 0 
+                                    ? 'Seleccionar programas' 
+                                    : configData.selectedPrograms.length === 1 
+                                      ? configData.selectedPrograms[0]
+                                      : `${configData.selectedPrograms.length} programas seleccionados`
+                                  }
+                                </span>
+                                <ChevronDown className={`w-4 h-4 transition-transform ${showProgramDropdown ? 'rotate-180' : ''}`} />
+                              </button>
+                              
+                              {showProgramDropdown && (
+                                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                  <div className="p-3 border-b border-gray-200 bg-gray-50">
+                                    <div className="flex items-center justify-between">
+                                      <button
+                                        onClick={() => {
+                                          if (configData.selectedPrograms.length === programs.length) {
+                                            setConfigData(prev => ({ ...prev, selectedPrograms: [] }));
+                                          } else {
+                                            setConfigData(prev => ({ ...prev, selectedPrograms: [...programs] }));
+                                          }
+                                        }}
+                                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                                      >
+                                        {configData.selectedPrograms.length === programs.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                                      </button>
+                                      {configData.selectedPrograms.length > 0 && (
+                                        <button
+                                          onClick={() => setConfigData(prev => ({ ...prev, selectedPrograms: [] }))}
+                                          className="text-sm text-gray-600 hover:text-gray-800"
+                                        >
+                                          Limpiar
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="py-2">
+                                    {programs.map((program) => (
+                                      <label
+                                        key={program}
+                                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={configData.selectedPrograms.includes(program)}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedPrograms: [...prev.selectedPrograms, program]
+                                              }));
+                                            } else {
+                                              setConfigData(prev => ({
+                                                ...prev,
+                                                selectedPrograms: prev.selectedPrograms.filter(p => p !== program)
+                                              }));
+                                            }
+                                          }}
+                                          className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <span className="text-sm text-gray-900">{program}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Tags de programas seleccionados */}
+                            {configData.selectedPrograms.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {configData.selectedPrograms.map((program) => (
+                                  <div
+                                    key={program}
+                                    className="flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm"
+                                  >
+                                    <span>{program}</span>
+                                    <button
+                                      onClick={() => {
                                         setConfigData(prev => ({
                                           ...prev,
                                           selectedPrograms: prev.selectedPrograms.filter(p => p !== program)
                                         }));
-                                      }
-                                    }}
-                                    className="mr-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                  />
-                                  <span className="text-sm text-gray-900">{program}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {configData.selectedPrograms.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {configData.selectedPrograms.map((program) => (
-                                <div key={program} className="flex items-center bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
-                                  <span>{program}</span>
-                                  <button
-                                    onClick={() => {
-                                      setConfigData(prev => ({
-                                        ...prev,
-                                        selectedPrograms: prev.selectedPrograms.filter(p => p !== program)
-                                      }));
-                                    }}
-                                    className="ml-2 hover:bg-purple-200 rounded-full p-0.5"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                      }}
+                                      className="ml-2 hover:bg-purple-200 rounded-full p-0.5"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Paso 2: Configuración de Parámetros */}
+                      {currentStep === 2 && (
+                        <div>
+                          <div className="mb-6">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-2">Configuración de Parámetros</h4>
+                            <p className="text-sm text-gray-600">
+                              Configura los parámetros para cada combinación de marca, campus y programa seleccionados.
+                            </p>
+                          </div>
+
+                          {/* Tabla de combinaciones */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full border border-gray-200 rounded-lg">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">Marca</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">Campus</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">Programa</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">Matrícula Activa</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">% Retención</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">% Reinscripción</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">% Descuento</th>
+                                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b">Precio Base</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {generateParameterCombinations().map((key, index) => {
+                                  const [brand, campus, program] = key.split('-');
+                                  const params = configData.parameters[key] || {};
+                                  
+                                  return (
+                                    <tr key={index} className="hover:bg-gray-50">
+                                      <td className="px-4 py-3 text-sm text-gray-900 border-r">{brand}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-900 border-r">{campus}</td>
+                                      <td className="px-4 py-3 text-sm text-gray-900 border-r">{program}</td>
+                                      <td className="px-4 py-3 border-r">
+                                        <input
+                                          type="number"
+                                          value={params.activeEnrollment || ''}
+                                          onChange={(e) => updateParameter(key, 'activeEnrollment', e.target.value)}
+                                          className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          placeholder="150"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3 border-r">
+                                        <input
+                                          type="number"
+                                          value={params.retentionRate || ''}
+                                          onChange={(e) => updateParameter(key, 'retentionRate', e.target.value)}
+                                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          placeholder="85"
+                                          min="0"
+                                          max="100"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3 border-r">
+                                        <input
+                                          type="number"
+                                          value={params.reinscriptionRate || ''}
+                                          onChange={(e) => updateParameter(key, 'reinscriptionRate', e.target.value)}
+                                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          placeholder="90"
+                                          min="0"
+                                          max="100"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3 border-r">
+                                        <input
+                                          type="number"
+                                          value={params.discountRate || ''}
+                                          onChange={(e) => updateParameter(key, 'discountRate', e.target.value)}
+                                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          placeholder="10"
+                                          min="0"
+                                          max="100"
+                                        />
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <input
+                                          type="number"
+                                          value={params.basePrice || ''}
+                                          onChange={(e) => updateParameter(key, 'basePrice', e.target.value)}
+                                          className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                          placeholder="12500"
+                                        />
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1004,20 +1258,46 @@ const Projections: React.FC = () => {
 
             {/* Footer */}
             <div className="p-6 border-t border-gray-200 flex justify-between flex-shrink-0">
-              <div className="flex items-center justify-end space-x-4">
-                <button 
-                  onClick={() => setShowConfig(false)}
-                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={handleConfigSubmit}
-                  disabled={!configData.startMonth || !configData.endMonth || configData.selectedBrands.length === 0}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Continuar
-                </button>
+              <div className="flex justify-between w-full">
+                <div>
+                  {currentStep > 1 && (
+                    <button 
+                      onClick={prevStep}
+                      className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      Anterior
+                    </button>
+                  )}
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button 
+                    onClick={() => {
+                      setShowConfig(false);
+                      setCurrentStep(1);
+                    }}
+                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  
+                  {currentStep === 1 ? (
+                    <button 
+                      onClick={nextStep}
+                      disabled={configData.selectedBrands.length === 0 || configData.selectedCampuses.length === 0 || configData.selectedPrograms.length === 0}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Siguiente
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleConfigSubmit}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Crear Proyección
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
