@@ -614,9 +614,9 @@ const Projections: React.FC = () => {
       {/* Modal de configuración */}
       {showConfig && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-xl w-full h-screen mx-4 flex flex-col max-w-7xl">
+          <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="p-6 border-b border-gray-200 bg-white rounded-t-xl shadow-sm flex-shrink-0">
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Configurar Nueva Proyección</h2>
@@ -632,7 +632,7 @@ const Projections: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden flex">
+            <div className="p-6 flex-1 overflow-y-auto">
               {/* Left Column - Configuration */}
               <div className="w-1/2 border-r border-gray-200">
                 <div className="flex-1 overflow-y-auto min-h-0">
@@ -1003,7 +1003,7 @@ const Projections: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="flex-shrink-0 bg-gray-50 border-t border-gray-200 p-6 rounded-b-xl">
+            <div className="p-6 border-t border-gray-200 flex justify-between flex-shrink-0">
               <div className="flex items-center justify-end space-x-4">
                 <button 
                   onClick={() => setShowConfig(false)}
