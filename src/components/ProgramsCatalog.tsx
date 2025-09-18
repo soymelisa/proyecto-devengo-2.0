@@ -18,7 +18,6 @@ interface Program {
 
 const ProgramsCatalog: React.FC = () => {
   const [activeTab, setActiveTab] = useState('catalog');
-  const [activeTab, setActiveTab] = useState('catalog');
   const [selectedPeriod, setSelectedPeriod] = useState('2025-1');
   const [searchTerm, setSearchTerm] = useState('');
   const [brandFilter, setBrandFilter] = useState('all');
@@ -690,14 +689,6 @@ const ProgramsCatalog: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
-      {/* Modal de detalle del programa */}
-      {selectedProgram && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Detalle del Programa</h3>
       )}
 
       {/* Modal de detalle del programa */}
