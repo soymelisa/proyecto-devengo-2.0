@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Plus, Edit, Eye, Filter, Search, Calendar, Tag, TrendingUp, Building2, AlertTriangle, Upload, FileText, Download, CheckCircle, XCircle, Loader, X } from 'lucide-react';
+import { BookOpen, Plus, Edit, Eye, Filter, Search, Calendar, Tag, TrendingUp, Building2, AlertTriangle, Upload, FileText, Download, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 interface Program {
   id: string;
@@ -16,17 +16,6 @@ interface Program {
   createdAt: string;
 }
 
-interface UploadResult {
-  totalRecords: number;
-  successfulRecords: number;
-  errorRecords: number;
-  errors: Array<{
-    row: number;
-    field: string;
-    message: string;
-  }>;
-}
-
 const ProgramsCatalog: React.FC = () => {
   const [activeTab, setActiveTab] = useState('catalog');
   const [selectedPeriod, setSelectedPeriod] = useState('2025-1');
@@ -37,14 +26,6 @@ const ProgramsCatalog: React.FC = () => {
   const [showHypothetical, setShowHypothetical] = useState(true);
   const [showNewProgramModal, setShowNewProgramModal] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-
-  // Estados para carga masiva
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'validating' | 'processing' | 'completed' | 'error'>('idle');
-  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
-  const [showUploadError, setShowUploadError] = useState(false);
-  const [uploadErrorMessage, setUploadErrorMessage] = useState('');
 
   const [newProgram, setNewProgram] = useState({
     name: '',
@@ -221,126 +202,6 @@ const ProgramsCatalog: React.FC = () => {
     return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  // Funciones para carga masiva
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validar extensión
-    const allowedExtensions = ['.xlsx', '.csv'];
-    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
-    
-    if (!allowedExtensions.includes(fileExtension)) {
-      setUploadErrorMessage(`Formato de archivo no válido. Solo se permiten archivos ${allowedExtensions.join(', ')}`);
-      setShowUploadError(true);
-      event.target.value = ''; // Limpiar input
-      return;
-    }
-
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadErrorMessage('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
-      setShowUploadError(true);
-      event.target.value = '';
-      return;
-    }
-
-    setUploadFile(file);
-    setUploadResult(null);
-    setUploadStatus('idle');
-  };
-
-  const processUpload = async () => {
-    if (!uploadFile) return;
-
-    try {
-      // Fase 1: Validando
-      setUploadStatus('validating');
-      setUploadProgress(0);
-      
-      // Simular validación
-      for (let i = 0; i <= 30; i++) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      // Fase 2: Procesando
-      setUploadStatus('processing');
-      
-      for (let i = 31; i <= 90; i++) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 30));
-      }
-
-      // Fase 3: Completado
-      setUploadStatus('completed');
-      setUploadProgress(100);
-
-      // Simular resultado
-      const mockResult: UploadResult = {
-        totalRecords: 150,
-        successfulRecords: 142,
-        errorRecords: 8,
-        errors: [
-          { row: 15, field: 'precio', message: 'Precio debe ser un número válido' },
-          { row: 23, field: 'modalidad', message: 'Modalidad no válida. Valores permitidos: Presencial, Online, Sabatina' },
-          { row: 45, field: 'marca', message: 'Marca no existe en el sistema' },
-          { row: 67, field: 'duracion', message: 'Duración debe ser un número entero' },
-          { row: 89, field: 'campus', message: 'Campus no encontrado' },
-          { row: 102, field: 'nombre', message: 'Nombre del programa es requerido' },
-          { row: 134, field: 'tipo', message: 'Tipo de programa no válido' },
-          { row: 147, field: 'precio', message: 'Precio no puede ser negativo' }
-        ]
-      };
-
-      setUploadResult(mockResult);
-
-    } catch (error) {
-      setUploadStatus('error');
-      setUploadErrorMessage('Error al procesar el archivo. Por favor, inténtalo de nuevo.');
-      setShowUploadError(true);
-    }
-  };
-
-  const downloadErrorReport = () => {
-    if (!uploadResult) return;
-
-    const csvContent = [
-      'Fila,Campo,Error',
-      ...uploadResult.errors.map(error => `${error.row},"${error.field}","${error.message}"`)
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'reporte_errores_carga_masiva.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const resetUpload = () => {
-    setUploadFile(null);
-    setUploadProgress(0);
-    setUploadStatus('idle');
-    setUploadResult(null);
-    // Limpiar input file
-    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-    if (fileInput) fileInput.value = '';
-  };
-
-  const getStatusMessage = () => {
-    switch (uploadStatus) {
-      case 'validating': return 'Validando archivo...';
-      case 'processing': return 'Procesando registros...';
-      case 'completed': return 'Carga completada';
-      case 'error': return 'Error en la carga';
-      default: return '';
-    }
-  };
-
   // Agrupar por marca
   const programsByBrand = filteredPrograms.reduce((acc, program) => {
     if (!acc[program.brand]) acc[program.brand] = 0;
@@ -383,552 +244,313 @@ const ProgramsCatalog: React.FC = () => {
       </div>
 
       {/* Selector de período */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex">
-            <button
-              onClick={() => setActiveTab('catalog')}
-              className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'catalog'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Catálogo de Programas
-            </button>
-            <button
-              onClick={() => setActiveTab('bulk-upload')}
-              className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'bulk-upload'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Carga Masiva de Programas
-            </button>
-          </nav>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex items-center mb-4">
+          <Calendar className="w-5 h-5 text-blue-600 mr-2" />
+          <h2 className="text-lg font-semibold text-gray-900">Seleccionar Período</h2>
         </div>
-
-        {/* Contenido de tabs */}
-        {activeTab === 'catalog' && (
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <Calendar className="w-5 h-5 text-blue-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Seleccionar Período</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Período</label>
-                <select
-                  value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="2025-1">2025-1</option>
-                  <option value="2024-2">2024-2</option>
-                  <option value="2024-1">2024-1</option>
-                  <option value="2023-2">2023-2</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 w-full">
-                  <p className="text-sm text-blue-700">
-                    <span className="font-medium">Período seleccionado:</span> {selectedPeriod}
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    Mostrando programas activos para este período
-                  </p>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Período</label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="2025-1">2025-1</option>
+              <option value="2024-2">2024-2</option>
+              <option value="2024-1">2024-1</option>
+              <option value="2023-2">2023-2</option>
+            </select>
+          </div>
+          <div className="flex items-end">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 w-full">
+              <p className="text-sm text-blue-700">
+                <span className="font-medium">Período seleccionado:</span> {selectedPeriod}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Mostrando programas activos para este período
+              </p>
             </div>
           </div>
-        )}
-
-        {activeTab === 'bulk-upload' && (
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <Upload className="w-5 h-5 text-purple-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">Carga Masiva de Programas</h2>
-            </div>
-            
-            {/* Mensaje de ayuda */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <div className="flex items-start">
-                <FileText className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-medium text-blue-900 mb-1">Antes de cargar tu archivo</h3>
-                  <p className="text-sm text-blue-700 mb-2">
-                    Asegúrate de que tu archivo siga el formato correcto. Descarga la plantilla oficial para evitar errores.
-                  </p>
-                  <button 
-                    onClick={() => alert('Descargando plantilla oficial...')}
-                    className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Descargar plantilla oficial (BackOffice)
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Área de carga de archivo */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-6">
-              {!uploadFile ? (
-                <div>
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Selecciona tu archivo</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Formatos permitidos: .xlsx, .csv (máximo 10MB)
-                  </p>
-                  <label className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Seleccionar archivo
-                    <input
-                      id="file-upload"
-                      type="file"
-                      accept=".xlsx,.csv"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              ) : (
-                <div>
-                  <FileText className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{uploadFile.name}</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Tamaño: {(uploadFile.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
-                  
-                  {uploadStatus === 'idle' && (
-                    <div className="flex items-center justify-center space-x-3">
-                      <button
-                        onClick={processUpload}
-                        className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        Procesar archivo
-                      </button>
-                      <button
-                        onClick={resetUpload}
-                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        Cambiar archivo
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Indicador de progreso */}
-            {uploadStatus !== 'idle' && uploadStatus !== 'error' && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    {uploadStatus === 'completed' ? (
-                      <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-                    ) : (
-                      <Loader className="w-5 h-5 text-blue-600 mr-2 animate-spin" />
-                    )}
-                    <span className="text-sm font-medium text-gray-900">{getStatusMessage()}</span>
-                  </div>
-                  <span className="text-sm text-gray-600">{uploadProgress}%</span>
-                </div>
-                
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      uploadStatus === 'completed' ? 'bg-green-500' : 'bg-blue-500'
-                    }`}
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* Resumen de validación */}
-            {uploadResult && uploadStatus === 'completed' && (
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen de Carga</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{uploadResult.totalRecords}</div>
-                    <div className="text-sm text-blue-700">Total de registros</div>
-                  </div>
-                  
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{uploadResult.successfulRecords}</div>
-                    <div className="text-sm text-green-700">Registros exitosos</div>
-                  </div>
-                  
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{uploadResult.errorRecords}</div>
-                    <div className="text-sm text-red-700">Registros con error</div>
-                  </div>
-                </div>
-
-                {uploadResult.errorRecords > 0 && (
-                  <div className="border-t border-gray-200 pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-md font-medium text-gray-900">Errores encontrados</h4>
-                      <button
-                        onClick={downloadErrorReport}
-                        className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Descargar reporte de errores
-                      </button>
-                    </div>
-                    
-                    <div className="max-h-48 overflow-y-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2 text-left font-medium text-gray-700">Fila</th>
-                            <th className="px-4 py-2 text-left font-medium text-gray-700">Campo</th>
-                            <th className="px-4 py-2 text-left font-medium text-gray-700">Error</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {uploadResult.errors.slice(0, 10).map((error, index) => (
-                            <tr key={index}>
-                              <td className="px-4 py-2 text-gray-900">{error.row}</td>
-                              <td className="px-4 py-2 text-gray-900">{error.field}</td>
-                              <td className="px-4 py-2 text-gray-600">{error.message}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {uploadResult.errors.length > 10 && (
-                        <p className="text-xs text-gray-500 mt-2 text-center">
-                          Mostrando 10 de {uploadResult.errors.length} errores. Descarga el reporte completo.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-center mt-6">
-                  <button
-                    onClick={resetUpload}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Cargar otro archivo
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Alerta de error */}
-      {showUploadError && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <div className="flex items-center mb-4">
-                <XCircle className="w-6 h-6 text-red-600 mr-3" />
-                <h3 className="text-lg font-semibold text-gray-900">Error en el archivo</h3>
-              </div>
-              <p className="text-gray-600 mb-6">{uploadErrorMessage}</p>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setShowUploadError(false)}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Entendido
-                </button>
-              </div>
+      {/* Resumen de programas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 rounded-lg bg-blue-50">
+              <BookOpen className="w-6 h-6 text-blue-600" />
             </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold text-gray-900">{totalPrograms}</h3>
+            <p className="text-gray-600 text-sm mt-1">Total Programas</p>
+            <p className="text-xs text-blue-600 mt-1">{selectedPeriod}</p>
           </div>
         </div>
-      )}
 
-      {/* Resto del contenido solo se muestra en la tab de catálogo */}
-      {activeTab === 'catalog' && (
-        <>
-          {/* Resumen de programas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-blue-50">
-                  <BookOpen className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-2xl font-bold text-gray-900">{totalPrograms}</h3>
-                <p className="text-gray-600 text-sm mt-1">Total Programas</p>
-                <p className="text-xs text-blue-600 mt-1">{selectedPeriod}</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-green-50">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-2xl font-bold text-green-900">{realPrograms}</h3>
-                <p className="text-gray-600 text-sm mt-1">Programas Reales</p>
-                <p className="text-xs text-green-600 mt-1">Activos</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-purple-50">
-                  <Tag className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-2xl font-bold text-purple-900">{hypotheticalPrograms}</h3>
-                <p className="text-gray-600 text-sm mt-1">Programas Hipotéticos</p>
-                <p className="text-xs text-purple-600 mt-1">Para proyecciones</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between">
-                <div className="p-3 rounded-lg bg-indigo-50">
-                  <TrendingUp className="w-6 h-6 text-indigo-600" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-2xl font-bold text-indigo-900">${averagePrice.toLocaleString()}</h3>
-                <p className="text-gray-600 text-sm mt-1">Precio Promedio</p>
-                <p className="text-xs text-orange-600 mt-1">Por programa</p>
-              </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 rounded-lg bg-green-50">
+              <TrendingUp className="w-6 h-6 text-green-600" />
             </div>
           </div>
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold text-green-900">{realPrograms}</h3>
+            <p className="text-gray-600 text-sm mt-1">Programas Reales</p>
+            <p className="text-xs text-green-600 mt-1">Activos</p>
+          </div>
+        </div>
 
-          {/* Distribución por marca y modalidad */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Marca</h3>
-              <div className="space-y-3">
-                {Object.entries(programsByBrand).map(([brand, count]) => (
-                  <div key={brand} className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">{brand}</span>
-                    <div className="flex items-center">
-                      <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full"
-                          style={{ width: `${(count / totalPrograms) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-900">{count}</span>
-                    </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 rounded-lg bg-purple-50">
+              <Tag className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold text-purple-900">{hypotheticalPrograms}</h3>
+            <p className="text-gray-600 text-sm mt-1">Programas Hipotéticos</p>
+            <p className="text-xs text-purple-600 mt-1">Para proyecciones</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center justify-between">
+            <div className="p-3 rounded-lg bg-indigo-50">
+              <TrendingUp className="w-6 h-6 text-indigo-600" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold text-indigo-900">${averagePrice.toLocaleString()}</h3>
+            <p className="text-gray-600 text-sm mt-1">Precio Promedio</p>
+            <p className="text-xs text-orange-600 mt-1">Por programa</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Distribución por marca y modalidad */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Marca</h3>
+          <div className="space-y-3">
+            {Object.entries(programsByBrand).map(([brand, count]) => (
+              <div key={brand} className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">{brand}</span>
+                <div className="flex items-center">
+                  <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{ width: `${(count / totalPrograms) * 100}%` }}
+                    ></div>
                   </div>
-                ))}
+                  <span className="text-sm font-bold text-gray-900">{count}</span>
+                </div>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Modalidad</h3>
-              <div className="space-y-3">
-                {Object.entries(programsByModality).map(([modality, count]) => (
-                  <div key={modality} className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">{modality}</span>
-                    <div className="flex items-center">
-                      <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{ width: `${(count / totalPrograms) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-900">{count}</span>
-                    </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribución por Modalidad</h3>
+          <div className="space-y-3">
+            {Object.entries(programsByModality).map(([modality, count]) => (
+              <div key={modality} className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">{modality}</span>
+                <div className="flex items-center">
+                  <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: `${(count / totalPrograms) * 100}%` }}
+                    ></div>
                   </div>
-                ))}
+                  <span className="text-sm font-bold text-gray-900">{count}</span>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
+        </div>
+      </div>
 
-          {/* Filtros */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Buscar programa..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              
-              <select
-                value={brandFilter}
-                onChange={(e) => setBrandFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Todas las Marcas</option>
-                <option value="Lottus">Lottus</option>
-                <option value="UVM">UVM</option>
-                <option value="UNITEC">UNITEC</option>
-                <option value="ULA">ULA</option>
-                <option value="UANE">UANE</option>
-              </select>
-
-              <select
-                value={modalityFilter}
-                onChange={(e) => setModalityFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Todas las Modalidades</option>
-                <option value="Presencial">Presencial</option>
-                <option value="Online">Online</option>
-                <option value="Sabatina">Sabatina</option>
-              </select>
-
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">Todos los Tipos</option>
-                <option value="Semestral">Semestral</option>
-                <option value="Cuatrimestral">Cuatrimestral</option>
-                <option value="Trimestral">Trimestral</option>
-                <option value="Anual">Anual</option>
-              </select>
-
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={showHypothetical}
-                  onChange={(e) => setShowHypothetical(e.target.checked)}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="text-sm text-gray-700">Mostrar Hipotéticos</span>
-              </label>
-
-              <button className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtrar
-              </button>
-            </div>
+      {/* Filtros */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Buscar programa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
+          
+          <select
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">Todas las Marcas</option>
+            <option value="Lottus">Lottus</option>
+            <option value="UVM">UVM</option>
+            <option value="UNITEC">UNITEC</option>
+            <option value="ULA">ULA</option>
+            <option value="UANE">UANE</option>
+          </select>
 
-          {/* Listado de programas */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Programas del Período: {selectedPeriod}
-              </h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Programa
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Marca
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Modalidad
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Precio
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duración
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Campus
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPrograms.map((program) => (
-                    <tr key={program.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{program.name}</div>
-                            {program.isHypothetical && program.hypotheticalTag && (
-                              <div className="flex items-center mt-1">
-                                <Tag className="w-3 h-3 text-purple-500 mr-1" />
-                                <span className="text-xs text-purple-600 font-medium">{program.hypotheticalTag}</span>
-                              </div>
-                            )}
+          <select
+            value={modalityFilter}
+            onChange={(e) => setModalityFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">Todas las Modalidades</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Online">Online</option>
+            <option value="Sabatina">Sabatina</option>
+          </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">Todos los Tipos</option>
+            <option value="Semestral">Semestral</option>
+            <option value="Cuatrimestral">Cuatrimestral</option>
+            <option value="Trimestral">Trimestral</option>
+            <option value="Anual">Anual</option>
+          </select>
+
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              checked={showHypothetical}
+              onChange={(e) => setShowHypothetical(e.target.checked)}
+              className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-700">Mostrar Hipotéticos</span>
+          </label>
+
+          <button className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <Filter className="w-4 h-4 mr-2" />
+            Filtrar
+          </button>
+        </div>
+      </div>
+
+      {/* Listado de programas */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Programas del Período: {selectedPeriod}
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Programa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Marca
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Modalidad
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tipo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Precio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Duración
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Campus
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredPrograms.map((program) => (
+                <tr key={program.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{program.name}</div>
+                        {program.isHypothetical && program.hypotheticalTag && (
+                          <div className="flex items-center mt-1">
+                            <Tag className="w-3 h-3 text-purple-500 mr-1" />
+                            <span className="text-xs text-purple-600 font-medium">{program.hypotheticalTag}</span>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getBrandColor(program.brand)}`}>
-                          {program.brand}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getModalityColor(program.modality)}`}>
-                          {program.modality}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getTypeColor(program.type)}`}>
-                          {program.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${program.price.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {program.duration} {program.type === 'Semestral' ? 'semestres' : 
-                         program.type === 'Cuatrimestral' ? 'cuatrimestres' : 
-                         program.type === 'Trimestral' ? 'trimestres' : 'años'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {program.campus}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          program.isHypothetical 
-                            ? 'bg-purple-100 text-purple-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}>
-                          {program.isHypothetical ? 'Hipotético' : 'Activo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
-                          <button 
-                            onClick={() => setSelectedProgram(program)}
-                            className="text-blue-600 hover:text-blue-900 transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </>
-      )}
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getBrandColor(program.brand)}`}>
+                      {program.brand}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getModalityColor(program.modality)}`}>
+                      {program.modality}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${getTypeColor(program.type)}`}>
+                      {program.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ${program.price.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {program.duration} {program.type === 'Semestral' ? 'semestres' : 
+                     program.type === 'Cuatrimestral' ? 'cuatrimestres' : 
+                     program.type === 'Trimestral' ? 'trimestres' : 'años'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {program.campus}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      program.isHypothetical 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {program.isHypothetical ? 'Hipotético' : 'Activo'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => setSelectedProgram(program)}
+                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Modal para agregar programa */}
       {showNewProgramModal && (
@@ -1142,6 +764,85 @@ const ProgramsCatalog: React.FC = () => {
               </div>
             </div>
           </div>
+                  <div className="flex items-center justify-center mb-2">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-blue-900">{uploadState.summary.total}</h4>
+                  <p className="text-sm text-blue-700">Total Procesados</p>
+                </div>
+                
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-green-900">{uploadState.summary.successful}</h4>
+                  <p className="text-sm text-green-700">Registros Válidos</p>
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <XCircle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-red-900">{uploadState.summary.errors}</h4>
+                  <p className="text-sm text-red-700">Con Errores</p>
+                </div>
+              </div>
+
+              {/* Mensaje de resumen */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    {uploadState.summary.errors > 0 ? (
+                      <AlertTriangle className="w-5 h-5 text-orange-500" />
+                    ) : (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    )}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-900">
+                      {uploadState.summary.successful} registros cargados exitosamente
+                      {uploadState.summary.errors > 0 && (
+                        <span>; {uploadState.summary.errors} con errores</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón para descargar reporte de errores */}
+              {uploadState.summary.errors > 0 && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={downloadErrorReport}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Descargar Reporte de Errores ({uploadState.summary.errors} errores)
+                  </button>
+                </div>
+              )}
+
+              {/* Botón para cargar otro archivo */}
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => {
+                    setUploadState({
+                      status: 'idle',
+                      progress: 0,
+                      message: '',
+                      file: null,
+                      summary: { total: 0, successful: 0, errors: 0 },
+                      errorDetails: []
+                    });
+                  }}
+                  className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Cargar Otro Archivo
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
